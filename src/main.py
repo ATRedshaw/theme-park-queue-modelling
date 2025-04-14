@@ -4,7 +4,7 @@ from config import load_credentials
 from logger import setup_logging
 from database import setup_database, store_data, store_park_info
 from scraper import login, extract_data
-from utils import filter_data_to_intervals
+from utils import filter_data_to_intervals, generate_date_range
 import random
 
 async def main():
@@ -26,9 +26,14 @@ async def main():
         logger.critical(f"Database setup failed, exiting")
         return
     
-    valid_dates = ['2024/12/25', '2024/10/30']
+    try:
+        valid_dates = generate_date_range('2024/03/01', '2024/11/03', logger)
+    except ValueError as e:
+        logger.critical(f"Failed to generate date range: {e}")
+        return
+    
     park_id = '2'  # Could be dynamic: url.split('/')[4]
-    logger.info(f"Processing dates: {valid_dates} for park {park_id}")
+    logger.info(f"Processing {len(valid_dates)} dates for park {park_id}")
     
     async with async_playwright() as p:
         logger.debug("Launching browser")

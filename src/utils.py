@@ -96,3 +96,38 @@ def filter_data_to_intervals(data, date, logger):
     
     logger.debug(f"Filtered data contains {len(filtered_data)} rides")
     return filtered_data
+
+def generate_date_range(start_date, end_date, logger):
+    """
+    Generates a list of dates between start_date and end_date (inclusive) in YYYY/MM/DD format.
+    
+    Args:
+        start_date (str): Start date in YYYY/MM/DD format
+        end_date (str): End date in YYYY/MM/DD format
+        logger: Logger instance for logging actions
+    
+    Returns:
+        list: Ordered list of dates in YYYY/MM/DD format
+    
+    Raises:
+        ValueError: If dates are invalid or end_date is before start_date
+    """
+    try:
+        start = datetime.strptime(start_date, '%Y/%m/%d')
+        end = datetime.strptime(end_date, '%Y/%m/%d')
+    except ValueError as e:
+        logger.error(f"Invalid date format for start_date ({start_date}) or end_date ({end_date}): {e}")
+        raise ValueError("Dates must be in YYYY/MM/DD format")
+    
+    if end < start:
+        logger.error(f"end_date ({end_date}) is before start_date ({start_date})")
+        raise ValueError("end_date must not be before start_date")
+    
+    date_list = []
+    current = start
+    while current <= end:
+        date_list.append(current.strftime('%Y/%m/%d'))
+        current += timedelta(days=1)
+    
+    logger.debug(f"Generated {len(date_list)} dates from {start_date} to {end_date}")
+    return date_list
