@@ -3,7 +3,7 @@ import os
 
 def setup_database(logger):
     """
-    Sets up the SQLite database and creates the queue_data table if it doesn't exist.
+    Sets up the SQLite database and creates the queue_data and park_info tables if they don't exist.
     
     Args:
         logger: Logger instance for logging actions
@@ -13,10 +13,12 @@ def setup_database(logger):
     """
     logger.debug("Setting up database")
     try:
-        # Create folder if not exists data
+        # Create folder if not exists
         os.makedirs('data', exist_ok=True)
         conn = sqlite3.connect('data/queue_data.db')
         cursor = conn.cursor()
+        
+        # Create queue_data table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS queue_data (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,6 +29,16 @@ def setup_database(logger):
                 is_closed INTEGER  -- 0 for False, 1 for True
             )
         """)
+        
+        # Create park_info table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS park_info (
+                ride_id TEXT,
+                park_id TEXT,
+                PRIMARY KEY (ride_id, park_id)
+            )
+        """)
+        
         conn.commit()
         logger.info("Database setup completed successfully")
         return conn
@@ -44,7 +56,7 @@ def store_data(conn, date, data, logger):
         data (list): List of ride data dictionaries
         logger: Logger instance for logging actions
     """
-    logger.info(f"Storing data for date {date}")
+    logger.info(f"Storing queue data for date {date}")
     cursor = conn.cursor()
     try:
         for ride in data:
@@ -54,10 +66,37 @@ def store_data(conn, date, data, logger):
                     INSERT INTO queue_data (date, ride_id, time_of_day, queue_time, is_closed)
                     VALUES (?, ?, ?, ?, ?)
                 """, (date, ride_id, point['time_of_day'], point['queue_time'], point['is_closed']))
-                logger.debug(f"Inserted data point for ride {ride_id} at {point['time_of_day']}")
+                logger.debug(f"Inserted queue data point for ride {ride_id} at {point['time_of_day']}")
         conn.commit()
-        logger.info(f"Successfully stored {len(data)} rides' data for {date}")
+        logger.info(f"Successfully stored {len(data)} rides' queue data for {date}")
     except Exception as e:
-        logger.error(f"Failed to store data for {date}: {e}")
+        logger.error(f"Failed to store queue data for {date}: {e}")
+        conn.rollback()
+        raise
+
+def store_park_info(conn, ride_id, park_id, logger):
+    """
+    Stores the ride_id and park_id pair in the park_info table, avoiding duplicates.
+    
+    Args:
+        conn: SQLite connection object
+        ride_id (str): ID of the ride
+        park_id (str): ID of the park
+        logger: Logger instance for logging actions
+    """
+    logger.debug(f"Storing park info for ride {ride_id} and park {park_id}")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            INSERT OR IGNORE INTO park_info (ride_id, park_id)
+            VALUES (?, ?)
+        """, (ride_id, park_id))
+        conn.commit()
+        if cursor.rowcount > 0:
+            logger.debug(f"Inserted park info for ride {ride_id} and park {park_id}")
+        else:
+            logger.debug(f"Park info for ride {ride_id} and park {park_id} already exists")
+    except Exception as e:
+        logger.error(f"Failed to store park info for ride {ride_id} and park {park_id}: {e}")
         conn.rollback()
         raise

@@ -102,19 +102,20 @@ async def login(page, username, password, logger):
         logger.error(f"Login failed: {e}. Current URL: {page.url}, Title: {await page.title()}")
         raise
 
-async def extract_data(page, date, logger):
+async def extract_data(page, date, park_id, logger):
     """
     Extracts queue times reported by the park and closure status from charts on the page.
     
     Args:
         page: Playwright page object
         date (str): Date in 'YYYY/MM/DD' format
+        park_id (str): Park ID from URL
         logger: Logger instance for logging actions
     
     Returns:
-        list: List of dictionaries containing ride data
+        list: List of dictionaries containing ride data with park_id
     """
-    logger.info(f"Extracting data for date {date}")
+    logger.info(f"Extracting data for date {date} and park {park_id}")
     js_code = """
     () => {
         const panels = document.querySelectorAll('.panel');
@@ -165,6 +166,9 @@ async def extract_data(page, date, logger):
         await page.wait_for_selector('.panel', timeout=10000)
         await asyncio.sleep(5)
         extracted_data = await page.evaluate(js_code)
+        # Add park_id to each ride's data
+        for ride in extracted_data:
+            ride['park_id'] = park_id
         logger.debug(f"Extracted data: {extracted_data}")
         logger.info(f"Successfully extracted data for {len(extracted_data)} rides")
         return extracted_data

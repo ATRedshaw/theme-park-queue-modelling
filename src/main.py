@@ -2,7 +2,7 @@ import asyncio
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 from config import load_credentials
 from logger import setup_logging
-from database import setup_database, store_data
+from database import setup_database, store_data, store_park_info
 from scraper import login, extract_data
 import random
 
@@ -26,7 +26,8 @@ async def main():
         return
     
     valid_dates = ['2024/10/30', '2024/10/31', '2024/11/01']
-    logger.info(f"Processing dates: {valid_dates}")
+    park_id = '2'  # Could be dynamic: url.split('/')[4]
+    logger.info(f"Processing dates: {valid_dates} for park {park_id}")
     
     async with async_playwright() as p:
         logger.debug("Launching browser")
@@ -49,7 +50,7 @@ async def main():
             return
         
         for date in valid_dates:
-            url = f'https://queue-times.com/parks/2/calendar/{date}'
+            url = f'https://queue-times.com/parks/{park_id}/calendar/{date}'
             logger.info(f"Processing URL: {url}")
             try:
                 logger.debug(f"Navigating to {url}")
@@ -66,9 +67,12 @@ async def main():
                     continue
                 
                 logger.debug("Starting data extraction")
-                data = await extract_data(page, date, logger)
+                data = await extract_data(page, date, park_id, logger)
                 if data:
                     logger.debug("Starting data storage")
+                    # Store park info for each ride
+                    for ride in data:
+                        store_park_info(conn, ride['ride_id'], ride['park_id'], logger)
                     store_data(conn, date, data, logger)
                     logger.info(f"Completed processing for {date}")
                 else:
