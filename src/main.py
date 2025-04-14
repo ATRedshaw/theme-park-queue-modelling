@@ -4,11 +4,12 @@ from config import load_credentials
 from logger import setup_logging
 from database import setup_database, store_data, store_park_info
 from scraper import login, extract_data
+from utils import filter_data_to_intervals
 import random
 
 async def main():
     """
-    Main function to orchestrate login, data extraction, and storage with delays.
+    Main function to orchestrate login, data extraction, filtering, and storage with delays.
     """
     logger = setup_logging()
     logger.info("Starting main process")
@@ -22,7 +23,7 @@ async def main():
     try:
         conn = setup_database(logger)
     except Exception as e:
-        logger.critical("Database setup failed, exiting")
+        logger.critical(f"Database setup failed, exiting")
         return
     
     valid_dates = ['2024/10/30', '2024/10/31', '2024/11/01']
@@ -44,7 +45,7 @@ async def main():
         try:
             await login(page, username, password, logger)
         except Exception as e:
-            logger.critical("Login process failed, exiting")
+            logger.critical(f"Login process failed, exiting")
             await browser.close()
             conn.close()
             return
@@ -69,12 +70,20 @@ async def main():
                 logger.debug("Starting data extraction")
                 data = await extract_data(page, date, park_id, logger)
                 if data:
-                    logger.debug("Starting data storage")
-                    # Store park info for each ride
-                    for ride in data:
-                        store_park_info(conn, ride['ride_id'], ride['park_id'], logger)
-                    store_data(conn, date, data, logger)
-                    logger.info(f"Completed processing for {date}")
+                    logger.debug("Filtering data to 15-minute intervals")
+                    try:
+                        filtered_data = filter_data_to_intervals(data, date, logger)
+                        if filtered_data:
+                            logger.debug("Starting data storage")
+                            for ride in filtered_data:
+                                store_park_info(conn, ride['ride_id'], ride['park_id'], logger)
+                            store_data(conn, date, filtered_data, logger)
+                            logger.info(f"Completed processing for {date}")
+                        else:
+                            logger.warning(f"No valid data after filtering for {date}")
+                    except Exception as e:
+                        logger.error(f"Failed to filter data for {date}: {e}")
+                        continue
                 else:
                     logger.warning(f"No valid data extracted for {date}")
             except PlaywrightTimeoutError:

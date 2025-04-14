@@ -152,11 +152,22 @@ async def extract_data(page, date, park_id, logger):
                 console.log('No "Reported by park" dataset found for ride ID: ' + rideId);
                 return;
             }
-            const rideData = labels.map((label, index) => ({
-                time_of_day: label,
-                queue_time: parkDataset.data[index] || 0,
-                is_closed: (parkDataset.data[index] === 0) ? 1 : 0
-            }));
+            const rideData = labels.map((label, index) => {
+                // Normalize timestamp to YYYY-MM-DD HH:MM:SS
+                const date = new Date(label);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+                const seconds = String(date.getSeconds()).padStart(2, '0');
+                const formattedTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                return {
+                    time_of_day: formattedTime,
+                    queue_time: parkDataset.data[index] || 0,
+                    is_closed: (parkDataset.data[index] === 0) ? 1 : 0
+                };
+            });
             data.push({ ride_id: rideId, data_points: rideData });
         });
         return data;
@@ -169,7 +180,9 @@ async def extract_data(page, date, park_id, logger):
         # Add park_id to each ride's data
         for ride in extracted_data:
             ride['park_id'] = park_id
-        logger.debug(f"Extracted data: {extracted_data}")
+            # Log sample timestamps for debugging
+            if ride['data_points']:
+                logger.debug(f"Sample timestamps for ride {ride['ride_id']}: {ride['data_points'][:2]}")
         logger.info(f"Successfully extracted data for {len(extracted_data)} rides")
         return extracted_data
     except Exception as e:
