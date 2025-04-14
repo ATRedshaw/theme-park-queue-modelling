@@ -26,7 +26,7 @@ async def main():
         logger.critical(f"Database setup failed, exiting")
         return
     
-    valid_dates = ['2024/10/30', '2024/10/31', '2024/11/01']
+    valid_dates = ['2024/12/25', '2024/10/30']
     park_id = '2'  # Could be dynamic: url.split('/')[4]
     logger.info(f"Processing dates: {valid_dates} for park {park_id}")
     
