@@ -91,7 +91,7 @@ async def main():
                 try:
                     logger.debug(f"Navigating to {url}")
                     await page.goto(url)
-                    delay = random.uniform(4, 10)
+                    delay = random.uniform(3, 7)
                     logger.debug(f"Waiting {delay:.2f}s after page load")
                     await asyncio.sleep(delay)
                     
