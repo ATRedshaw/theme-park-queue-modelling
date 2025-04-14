@@ -1,0 +1,4 @@
+scraper:
+  start_date: "2024/10/30"
+  end_date: "2024/10/30"
+  park_ids: [2]
