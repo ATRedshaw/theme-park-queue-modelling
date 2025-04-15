@@ -4,7 +4,7 @@ import os
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 from config import load_credentials
 from logger import setup_logging
-from database import setup_database, store_data, store_park_info
+from database import setup_database, store_data, store_park_info, get_existing_dates
 from scraper import login, extract_data
 from utils import filter_data_to_intervals, generate_date_range
 import random
@@ -56,13 +56,11 @@ async def main():
         return
     
     try:
-        valid_dates = generate_date_range(start_date, end_date, logger)
+        all_dates = generate_date_range(start_date, end_date, logger)
     except ValueError as e:
         logger.critical(f"Failed to generate date range: {e}")
         conn.close()
         return
-    
-    logger.info(f"Processing {len(valid_dates)} dates for {len(park_ids)} parks: {park_ids}")
     
     async with async_playwright() as p:
         logger.debug("Launching browser")
@@ -85,6 +83,12 @@ async def main():
             return
         
         for park_id in park_ids:
+            # Get existing dates for this park
+            existing_dates = get_existing_dates(conn, park_id, logger)
+            # Filter valid_dates to exclude existing dates
+            valid_dates = [date for date in all_dates if date not in existing_dates]
+            logger.info(f"Processing {len(valid_dates)} new dates for park {park_id}")
+            
             for date in valid_dates:
                 url = f'https://queue-times.com/parks/{park_id}/calendar/{date}'
                 logger.info(f"Processing URL: {url}")

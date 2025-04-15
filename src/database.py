@@ -100,3 +100,31 @@ def store_park_info(conn, ride_id, park_id, logger):
         logger.error(f"Failed to store park info for ride {ride_id} and park {park_id}: {e}")
         conn.rollback()
         raise
+
+def get_existing_dates(conn, park_id, logger):
+    """
+    Retrieves a list of unique dates that already have queue data for the given park_id.
+    
+    Args:
+        conn: SQLite connection object
+        park_id (str): ID of the park
+        logger: Logger instance for logging actions
+    
+    Returns:
+        list: List of dates in 'YYYY/MM/DD' format that already have data
+    """
+    logger.debug(f"Retrieving existing dates for park {park_id}")
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            SELECT DISTINCT qd.date
+            FROM queue_data qd
+            JOIN park_info pi ON qd.ride_id = pi.ride_id
+            WHERE pi.park_id = ?
+        """, (park_id,))
+        existing_dates = [row[0] for row in cursor.fetchall()]
+        logger.debug(f"Found {len(existing_dates)} existing dates for park {park_id}")
+        return existing_dates
+    except Exception as e:
+        logger.error(f"Failed to retrieve existing dates for park {park_id}: {e}")
+        return []
