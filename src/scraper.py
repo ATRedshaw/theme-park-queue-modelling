@@ -174,7 +174,7 @@ async def extract_data(page, date, park_id, logger):
     }
     """
     try:
-        await page.wait_for_selector('.panel', timeout=10000)
+        await page.wait_for_selector('.panel', timeout=5000)
         await asyncio.sleep(5)
         extracted_data = await page.evaluate(js_code)
         # Add park_id to each ride's data

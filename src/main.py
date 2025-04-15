@@ -91,12 +91,12 @@ async def main():
                 try:
                     logger.debug(f"Navigating to {url}")
                     await page.goto(url)
-                    delay = random.uniform(3, 7)
+                    delay = random.uniform(2, 4)
                     logger.debug(f"Waiting {delay:.2f}s after page load")
                     await asyncio.sleep(delay)
                     
                     logger.debug("Waiting for panels to load")
-                    await page.wait_for_selector('.panel', timeout=10000)
+                    await page.wait_for_selector('.panel', timeout=5000)
                     panels = await page.query_selector_all('.panel')
                     if not panels:
                         logger.warning(f"No panels found for park {park_id} on {date}")
