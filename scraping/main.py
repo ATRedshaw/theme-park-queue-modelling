@@ -115,7 +115,7 @@ async def main():
                             if filtered_data:
                                 logger.debug("Starting data storage")
                                 for ride in filtered_data:
-                                    store_park_info(conn, ride['ride_id'], ride['park_id'], logger)
+                                    store_park_info(conn, ride['ride_id'], ride['park_id'], ride.get('ride_name', 'Unknown'), logger)
                                 store_data(conn, date, filtered_data, logger)
                                 logger.info(f"Completed processing for park {park_id} on {date}")
                             else:

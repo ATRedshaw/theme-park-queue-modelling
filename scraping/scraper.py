@@ -104,7 +104,7 @@ async def login(page, username, password, logger):
 
 async def extract_data(page, date, park_id, logger):
     """
-    Extracts queue times reported by the park and closure status from charts on the page.
+    Extracts queue times reported by the park, closure status, and ride names from charts on the page.
     
     Args:
         page: Playwright page object
@@ -113,13 +113,14 @@ async def extract_data(page, date, park_id, logger):
         logger: Logger instance for logging actions
     
     Returns:
-        list: List of dictionaries containing ride data with park_id
+        list: List of dictionaries containing ride data with park_id and ride_name
     """
     logger.info(f"Extracting data for date {date} and park {park_id}")
     js_code = """
     () => {
         const panels = document.querySelectorAll('.panel');
         const data = [];
+        console.log(`Found ${panels.length} panels`);
         panels.forEach(panel => {
             const rideLink = panel.querySelector('h2 a');
             if (!rideLink) {
@@ -127,33 +128,38 @@ async def extract_data(page, date, park_id, logger):
                 return;
             }
             const href = rideLink.getAttribute('href');
+            const rideName = rideLink.textContent.trim();
+            console.log(`Ride link found: name=${rideName}, href=${href}`);
             if (!href) {
                 console.log('Ride link has no href attribute');
                 return;
             }
             const rideId = href.split('/').pop();
             if (!rideId) {
-                console.log('Failed to extract ride ID from href: ' + href);
+                console.log(`Failed to extract ride ID from href: ${href}`);
                 return;
             }
+            console.log(`Extracted rideId: ${rideId}`);
             const canvas = panel.querySelector('canvas');
             if (!canvas) {
-                console.log('No canvas found in panel for ride ID: ' + rideId);
+                console.log(`No canvas found in panel for ride ID: ${rideId}`);
                 return;
             }
+            console.log(`Canvas found for ride ID: ${rideId}`);
             const chart = Chart.getChart(canvas);
             if (!chart) {
-                console.log('No chart found for canvas in panel for ride ID: ' + rideId);
+                console.log(`No chart found for canvas in panel for ride ID: ${rideId}`);
                 return;
             }
+            console.log(`Chart found for ride ID: ${rideId}, labels count: ${chart.data.labels.length}`);
             const labels = chart.data.labels;
             const parkDataset = chart.data.datasets.find(ds => ds.label === 'Reported by park');
             if (!parkDataset) {
-                console.log('No "Reported by park" dataset found for ride ID: ' + rideId);
+                console.log(`No "Reported by park" dataset found for ride ID: ${rideId}`);
                 return;
             }
+            console.log(`Park dataset found for ride ID: ${rideId}, data points: ${parkDataset.data.length}`);
             const rideData = labels.map((label, index) => {
-                // Normalize timestamp to YYYY-MM-DD HH:MM:SS
                 const date = new Date(label);
                 const year = date.getFullYear();
                 const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -168,8 +174,10 @@ async def extract_data(page, date, park_id, logger):
                     is_closed: (parkDataset.data[index] === 0) ? 1 : 0
                 };
             });
-            data.push({ ride_id: rideId, data_points: rideData });
+            console.log(`Processed ${rideData.length} data points for ride ID: ${rideId}`);
+            data.push({ ride_id: rideId, ride_name: rideName, data_points: rideData });
         });
+        console.log(`Returning data with ${data.length} rides`);
         return data;
     }
     """
@@ -179,9 +187,8 @@ async def extract_data(page, date, park_id, logger):
         # Add park_id to each ride's data
         for ride in extracted_data:
             ride['park_id'] = park_id
-            # Log sample timestamps for debugging
-            if ride['data_points']:
-                logger.debug(f"Sample timestamps for ride {ride['ride_id']}: {ride['data_points'][:2]}")
+            # Log sample timestamps and ride name for debugging
+            logger.debug(f"Extracted ride: ride_id={ride['ride_id']}, ride_name={ride.get('ride_name', 'Unknown')}, sample_data_points={ride['data_points'][:2]}")
         logger.info(f"Successfully extracted data for {len(extracted_data)} rides")
         return extracted_data
     except Exception as e:

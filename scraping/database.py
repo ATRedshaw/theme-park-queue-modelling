@@ -35,6 +35,7 @@ def setup_database(logger):
             CREATE TABLE IF NOT EXISTS park_info (
                 ride_id TEXT,
                 park_id TEXT,
+                ride_name TEXT,  -- New column for ride name
                 PRIMARY KEY (ride_id, park_id)
             )
         """)
@@ -74,30 +75,31 @@ def store_data(conn, date, data, logger):
         conn.rollback()
         raise
 
-def store_park_info(conn, ride_id, park_id, logger):
+def store_park_info(conn, ride_id, park_id, ride_name, logger):
     """
-    Stores the ride_id and park_id pair in the park_info table, avoiding duplicates.
+    Stores the ride_id, park_id, and ride_name in the park_info table, avoiding duplicates.
     
     Args:
         conn: SQLite connection object
         ride_id (str): ID of the ride
         park_id (str): ID of the park
+        ride_name (str): Name of the ride
         logger: Logger instance for logging actions
     """
-    logger.debug(f"Storing park info for ride {ride_id} and park {park_id}")
+    logger.debug(f"Storing park info for ride {ride_id} ({ride_name}) and park {park_id}")
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            INSERT OR IGNORE INTO park_info (ride_id, park_id)
-            VALUES (?, ?)
-        """, (ride_id, park_id))
+            INSERT OR IGNORE INTO park_info (ride_id, park_id, ride_name)
+            VALUES (?, ?, ?)
+        """, (ride_id, park_id, ride_name))
         conn.commit()
         if cursor.rowcount > 0:
-            logger.debug(f"Inserted park info for ride {ride_id} and park {park_id}")
+            logger.debug(f"Inserted park info for ride {ride_id} ({ride_name}) and park {park_id}")
         else:
-            logger.debug(f"Park info for ride {ride_id} and park {park_id} already exists")
+            logger.debug(f"Park info for ride {ride_id} ({ride_name}) and park {park_id} already exists")
     except Exception as e:
-        logger.error(f"Failed to store park info for ride {ride_id} and park {park_id}: {e}")
+        logger.error(f"Failed to store park info for ride {ride_id} ({ride_name}) and park {park_id}: {e}")
         conn.rollback()
         raise
 

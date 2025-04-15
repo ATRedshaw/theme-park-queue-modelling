@@ -18,6 +18,7 @@ def filter_data_to_intervals(data, date, logger):
     for ride in data:
         ride_id = ride['ride_id']
         park_id = ride['park_id']
+        ride_name = ride.get('ride_name', 'Unknown')  # Preserve ride_name
         data_points = ride['data_points']
         
         # Parse timestamps from the scraped data
@@ -91,6 +92,7 @@ def filter_data_to_intervals(data, date, logger):
             filtered_data.append({
                 'ride_id': ride_id,
                 'park_id': park_id,
+                'ride_name': ride_name,  # Include ride_name
                 'data_points': filtered_points
             })
     
