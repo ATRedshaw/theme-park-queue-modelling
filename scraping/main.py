@@ -26,12 +26,13 @@ async def main():
         
         start_date = config['scraper'].get('start_date')
         end_date = config['scraper'].get('end_date')
+        exclude_months = config['scraper'].get('exclude_months', [])
         park_ids = config['scraper'].get('park_ids', [])
         
         if not start_date or not end_date or not park_ids:
             raise ValueError("config.yml missing required fields: start_date, end_date, or park_ids")
         
-        logger.info(f"Loaded config: start_date={start_date}, end_date={end_date}, park_ids={park_ids}")
+        logger.info(f"Loaded config: start_date={start_date}, end_date={end_date}, exclude_months={exclude_months}, park_ids={park_ids}")
     except FileNotFoundError:
         logger.critical(f"Config file not found at {config_path}")
         return
@@ -56,7 +57,7 @@ async def main():
         return
     
     try:
-        all_dates = generate_date_range(start_date, end_date, logger)
+        all_dates = generate_date_range(start_date, end_date, exclude_months, logger)
     except ValueError as e:
         logger.critical(f"Failed to generate date range: {e}")
         conn.close()

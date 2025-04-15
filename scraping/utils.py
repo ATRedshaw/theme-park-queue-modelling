@@ -92,20 +92,21 @@ def filter_data_to_intervals(data, date, logger):
             filtered_data.append({
                 'ride_id': ride_id,
                 'park_id': park_id,
-                'ride_name': ride_name,  # Include ride_name
+                'ride_name': ride_name,
                 'data_points': filtered_points
             })
     
     logger.debug(f"Filtered data contains {len(filtered_data)} rides")
     return filtered_data
 
-def generate_date_range(start_date, end_date, logger):
+def generate_date_range(start_date, end_date, exclude_months, logger):
     """
     Generates a list of dates between start_date and end_date (inclusive) in YYYY/MM/DD format.
     
     Args:
         start_date (str): Start date in YYYY/MM/DD format
         end_date (str): End date in YYYY/MM/DD format
+        exclude_months (list): List of months to exclude (1-12)
         logger: Logger instance for logging actions
     
     Returns:
@@ -130,6 +131,11 @@ def generate_date_range(start_date, end_date, logger):
     while current <= end:
         date_list.append(current.strftime('%Y/%m/%d'))
         current += timedelta(days=1)
+
+    # Filter out excluded months 
+    date_list = [date for date in date_list if int(date.split('/')[1]) not in exclude_months]
+    # Sort dates in ascending order
+    date_list.sort(key=lambda x: datetime.strptime(x, '%Y/%m/%d'))
     
     logger.debug(f"Generated {len(date_list)} dates from {start_date} to {end_date}")
     return date_list
