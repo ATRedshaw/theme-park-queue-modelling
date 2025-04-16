@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from helpers import load_all_data
+from helpers import load_all_data, get_name_from_queuetimes_id, get_themeparks_id_from_queuetimes_id
 from datetime import datetime
 
 def get_opening_hours(park_id, date):
@@ -9,7 +9,7 @@ def get_opening_hours(park_id, date):
     
     Args:
         park_id (int): The ID of the park.
-        date (str): The date in YYYY-MM-DD format.
+        date (str): The date in YYYY/MM/DD format.
         
     Returns:
         dict: A dictionary containing the opening hours.
@@ -50,7 +50,22 @@ def get_opening_hours(park_id, date):
             return None
 
     def future_date_opening_hours(park_id, date):
-        pass
+        year, month, day = date.split('/')
+        themepark_id = get_themeparks_id_from_queuetimes_id(get_name_from_queuetimes_id(park_id))
+
+        if themepark_id is None:
+            print(f"Error: Themepark ID not found for park ID {park_id}")
+            return None
+        
+        # Get the opening hours from the API
+        opening_hours = get_themeparks_schedule(themepark_id, year, month, day)
+        if opening_hours is None:
+            print(f"Error: Opening hours not found for park ID {park_id} on {date}")
+            return None
+        return {
+            'opening_time': opening_hours['opening_time'],
+            'closing_time': opening_hours['closing_time']
+        }
 
     # Try to convert the date to a datetime object
     try:
@@ -84,6 +99,24 @@ def get_opening_hours(park_id, date):
     else:
         # If the date is in the future, get future opening hours
         return future_date_opening_hours(park_id, date)
+    
+def get_themeparks_schedule(themeparks_id, year, month, day):
+    api_url = f'https://api.themeparks.wiki/v1/entity/{themeparks_id}/schedule/{year}/{month}'
+    response = requests.get(api_url)
+    date = f"{year}-{month}-{day}"
+    
+    # Find that date in the schedule
+    if response.status_code == 200:
+        schedule_data = response.json()
+        for entry in schedule_data.get('schedule', []):
+            if entry['date'] == date:
+                opening_time = datetime.fromisoformat(entry['openingTime']).strftime('%H:%M')
+                closing_time = datetime.fromisoformat(entry['closingTime']).strftime('%H:%M')
+                return {
+                    'opening_time': opening_time,
+                    'closing_time': closing_time
+                }
+    return None
 
 if __name__ == "__main__":
     # Example usage

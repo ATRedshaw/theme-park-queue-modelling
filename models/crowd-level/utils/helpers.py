@@ -1,5 +1,6 @@
 import sqlite3
 import pandas as pd
+import requests
 
 def load_all_data(db_path='data/queue_Data.db', statements={}):
     conn = sqlite3.connect(db_path)
@@ -28,6 +29,26 @@ def load_all_data(db_path='data/queue_Data.db', statements={}):
         'park_info': park_info
     }
 
+def get_name_from_queuetimes_id(park_id, api_url='https://queue-times.com/parks.json'):
+    response = requests.get(api_url)
+    if response.status_code == 200:
+        parks_data = response.json()
+        for company in parks_data:
+            for park in company.get('parks', []):
+                if park['id'] == park_id:
+                    return park['name']
+    return None
+
+def get_themeparks_id_from_queuetimes_id(name, api_url='https://api.themeparks.wiki/v1/destinations'):
+    response = requests.get(api_url)
+    if response.status_code == 200:
+        destinations_data = response.json()
+        for destination in destinations_data.get('destinations', []):
+            for park in destination.get('parks', []):
+                if park['name'].lower() == name.lower():
+                    return park['id']
+    return None
+
 if __name__ == "__main__":
     data = load_all_data()
     queue_data = data['queue_data']
@@ -39,3 +60,7 @@ if __name__ == "__main__":
     
     print("\nPark Info:")
     print(park_info.head())  
+
+    print("\nPark Name for ID 1:")
+    park_name = get_name_from_queuetimes_id(1)
+    print(park_name if park_name else "Park not found")
