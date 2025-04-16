@@ -1,6 +1,6 @@
 crowd-level:
   park_ids: []
-  exclude_montshs: []
+  exclude_months: []
 
 queues:
   park_ids: []
