@@ -5,7 +5,7 @@ from meteostat import Point, Daily
 import pandas as pd
 import requests
 
-def get_long_lat(park_id):
+def get_lat_long(park_id):
     """Use the park_id to get the longitude and latitude of the park from the park_locations.jsomn file.
     
     Args:
@@ -18,33 +18,33 @@ def get_long_lat(park_id):
     if park_id in park_locations:
         longitude = park_locations[park_id]["longitude"]
         latitude = park_locations[park_id]["latitude"]
-        return (longitude, latitude)
+        return (latitude, longitude)
     else:
         raise ValueError("Invalid park_id provided.")
 
-def get_weather_data(start_date, end_date, longitude, latitude, is_model_training=True):
+def get_weather_data(start_date, end_date, latitude, longitude, is_model_training=True):
     """
     Fetch weather data for a given date range and location. Get data dependent on whether it's for model training or inference.
     
     Args:
         start_date (str): Start date in YYYY-MM-DD format.
         end_date (str): End date in YYYY-MM-DD format.
-        longitude (float): Longitude of the location.
         latitude (float): Latitude of the location.
+        longitude (float): Longitude of the location.
         is_model_training (bool): Flag to indicate if the data is for model training or inference.
         
     Returns:
         dict: A dictionary containing the weather data.
     """
-    def model_training(start_date, end_date, longitude, latitude):
+    def model_training(start_date, end_date, latitude, longitude):
         """
         Fetch historical weather data for model training using meteostat.
         
         Args:
             start_date: Start date in YYYY-MM-DD format.
             end_date: End date in YYYY-MM-DD format.
-            longitude: Longitude of the location.
             latitude: Latitude of the location.
+            longitude: Longitude of the location.
         
         Returns:
             dict: A dictionary containing the weather data.
@@ -83,15 +83,15 @@ def get_weather_data(start_date, end_date, longitude, latitude, is_model_trainin
             print(f"Unexpected error in model_training: {str(e)}")
             return {}
     
-    def model_inference(start_date, end_date, longitude, latitude):
+    def model_inference(start_date, end_date, latitude, longitude):
         """
         Fetch predicted weather data for model inference using Open-Meteo.
         
         Args:
             start_date: Start date in YYYY-MM-DD format.
             end_date: End date in YYYY-MM-DD format.
-            longitude: Longitude of the location.
             latitude: Latitude of the location.
+            longitude: Longitude of the location.
         
         Returns:
             dict: A dictionary containing the predicted weather data.
