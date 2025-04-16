@@ -100,22 +100,35 @@ def get_opening_hours(park_id, date):
         # If the date is in the future, get future opening hours
         return future_date_opening_hours(park_id, date)
     
-def get_themeparks_schedule(themeparks_id, year, month, day):
+def get_themeparks_schedule(themeparks_id, year, month, day=None):
     api_url = f'https://api.themeparks.wiki/v1/entity/{themeparks_id}/schedule/{year}/{month}'
     response = requests.get(api_url)
-    date = f"{year}-{month}-{day}"
     
-    # Find that date in the schedule
     if response.status_code == 200:
         schedule_data = response.json()
-        for entry in schedule_data.get('schedule', []):
-            if entry['date'] == date:
+        if day:
+            date = f"{year}-{month}-{day}"
+            # Find that date in the schedule
+            for entry in schedule_data.get('schedule', []):
+                if entry['date'] == date:
+                    opening_time = datetime.fromisoformat(entry['openingTime']).strftime('%H:%M')
+                    closing_time = datetime.fromisoformat(entry['closingTime']).strftime('%H:%M')
+                    return {
+                        'opening_time': opening_time,
+                        'closing_time': closing_time
+                    }
+        else:
+            # Return all available days in the format day: {opening, closing}
+            all_days = {}
+            for entry in schedule_data.get('schedule', []):
+                day = entry['date'].split('-')[-1]
                 opening_time = datetime.fromisoformat(entry['openingTime']).strftime('%H:%M')
                 closing_time = datetime.fromisoformat(entry['closingTime']).strftime('%H:%M')
-                return {
+                all_days[f'{year}/{month}/{day}'] = {
                     'opening_time': opening_time,
                     'closing_time': closing_time
                 }
+            return all_days
     return None
 
 if __name__ == "__main__":
