@@ -41,10 +41,10 @@ def get_weather_data(start_date, end_date, longitude, latitude, is_model_trainin
         Fetch historical weather data for model training using meteostat.
         
         Args:
-            start_date (str): Start date in YYYY-MM-DD format.
-            end_date (str): End date in YYYY-MM-DD format.
-            longitude (float): Longitude of the location.
-            latitude (float): Latitude of the location.
+            start_date: Start date in YYYY-MM-DD format.
+            end_date: End date in YYYY-MM-DD format.
+            longitude: Longitude of the location.
+            latitude: Latitude of the location.
         
         Returns:
             dict: A dictionary containing the weather data.
@@ -74,7 +74,13 @@ def get_weather_data(start_date, end_date, longitude, latitude, is_model_trainin
             return weather_data
         
         except ValueError as ve:
-            print(f"ValueError: {ve}")
+            print(f"ValueError in model_training: {ve}")
+            return {}
+        except ConnectionError as ce:
+            print(f"ConnectionError in model_training: Failed to connect to Meteostat: {ce}")
+            return {}
+        except Exception as e:
+            print(f"Unexpected error in model_training: {str(e)}")
             return {}
     
     def model_inference(start_date, end_date, longitude, latitude):
@@ -133,10 +139,30 @@ def get_weather_data(start_date, end_date, longitude, latitude, is_model_trainin
             
             return weather_data
         
-        except Exception as e:
-            print(f"Error fetching weather data: {e}")
+        except ValueError as ve:
+            print(f"ValueError in model_inference: {ve}")
             return {}
-
+        except requests.HTTPError as he:
+            error_message = he.response.text
+            try:
+                error_json = he.response.json()
+                reason = error_json.get("reason", "No specific reason provided")
+            except ValueError:
+                reason = error_message or "No specific reason provided"
+            print(f"HTTPError in model_inference: Status {he.response.status_code}: {reason}")
+            return {}
+        except requests.ConnectionError as ce:
+            print(f"ConnectionError in model_inference: Failed to connect to Open-Meteo: {ce}")
+            return {}
+        except requests.Timeout as te:
+            print(f"Timeout in model_inference: Request to Open-Meteo timed out: {te}")
+            return {}
+        except requests.RequestException as re:
+            print(f"RequestException in model_inference: Failed to fetch data from Open-Meteo: {re}")
+            return {}
+        except Exception as e:
+            print(f"Unexpected error in model_inference: {str(e)}")
+            return {}
 
     if is_model_training:
         return model_training(start_date, end_date, longitude, latitude)
