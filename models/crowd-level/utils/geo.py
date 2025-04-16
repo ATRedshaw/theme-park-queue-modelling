@@ -1,5 +1,3 @@
-
-import json
 from datetime import datetime
 from meteostat import Point, Daily
 import pandas as pd
@@ -87,7 +85,8 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
                 date_str = date_idx.strftime("%Y-%m-%d")
                 weather_data[date_str] = {
                     "temperature_c": float(row['tavg']) if pd.notna(row['tavg']) else None,
-                    "precipitation_mm": float(row['prcp']) if pd.notna(row['prcp']) else None
+                    "precipitation_mm": float(row['prcp']) if pd.notna(row['prcp']) else None,
+                    "wind_speed_kmh": float(row['wspd']) if pd.notna(row['wspd']) else None
                 }
             
             return weather_data
@@ -129,7 +128,7 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
             params = {
                 "latitude": latitude,
                 "longitude": longitude,
-                "daily": "temperature_2m_mean,precipitation_sum",
+                "daily": "temperature_2m_mean,precipitation_sum,windspeed_10m_max",
                 "start_date": start_date.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
                 "timezone": "auto"
@@ -146,16 +145,18 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
 
             # Process data into dictionary
             weather_data = {}
-            for date, temp, precip in zip(
+            for date, temp, precip, wind in zip(
                 data["daily"]["time"],
                 data["daily"]["temperature_2m_mean"],
-                data["daily"]["precipitation_sum"]
+                data["daily"]["precipitation_sum"],
+                data["daily"]["windspeed_10m_max"]
             ):
                 weather_data[date] = {
                     "temperature_c": float(temp) if temp is not None else None,
-                    "precipitation_mm": float(precip) if precip is not None else None
+                    "precipitation_mm": float(precip) if precip is not None else None,
+                    "wind_speed_kmh": float(wind) if wind is not None else None
                 }
-            
+
             return weather_data
         
         except ValueError as ve:
@@ -187,7 +188,3 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
         return model_training(start_date, end_date, longitude, latitude)
     else:
         return model_inference(start_date, end_date, longitude, latitude)
-
-if __name__ == "__main__":
-    park_id = "2"
-    print(get_lat_long(park_id))
