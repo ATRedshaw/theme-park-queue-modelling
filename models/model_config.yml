@@ -1,7 +1,0 @@
-crowd-level:
-  park_ids: []
-  exclude_months: []
-
-queues:
-  park_ids: []
-  exclude_ride_ids: []
