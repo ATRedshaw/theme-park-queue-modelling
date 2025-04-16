@@ -128,7 +128,7 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
             params = {
                 "latitude": latitude,
                 "longitude": longitude,
-                "daily": "temperature_2m_mean,precipitation_sum,windspeed_10m_max",
+                "daily": "temperature_2m_mean,precipitation_sum,windspeed_10m_mean",
                 "start_date": start_date.strftime("%Y-%m-%d"),
                 "end_date": end_date.strftime("%Y-%m-%d"),
                 "timezone": "auto"
@@ -149,7 +149,7 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
                 data["daily"]["time"],
                 data["daily"]["temperature_2m_mean"],
                 data["daily"]["precipitation_sum"],
-                data["daily"]["windspeed_10m_max"]
+                data["daily"]["windspeed_10m_mean"]
             ):
                 weather_data[date] = {
                     "temperature_c": float(temp) if temp is not None else None,
@@ -188,3 +188,14 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
         return model_training(start_date, end_date, longitude, latitude)
     else:
         return model_inference(start_date, end_date, longitude, latitude)
+    
+if __name__ == "__main__":
+    # Example usage
+    start_date = "2025-04-20"
+    end_date = "2025-04-27"
+    park_id = 2
+    latitude, longitude = get_lat_long(park_id)
+    is_model_training = True
+
+    weather_data = get_weather_data(start_date, end_date, latitude, longitude, is_model_training=False)
+    print(weather_data)
