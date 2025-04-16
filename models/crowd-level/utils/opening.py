@@ -1,5 +1,5 @@
-import sqlite3
 import requests
+import pandas as pd
 from helpers import load_all_data
 from datetime import datetime
 
@@ -58,8 +58,27 @@ def get_opening_hours(park_id, date):
     except Exception as e:
         print(f"Error converting date: {e}")
         return None
+
+    try:
+        statements = {
+            'queue_select': 'date',
+            'park_where': f"park_id = {park_id}",
+            'park_select': '*'
+        }
+        sql_tables = load_all_data(statements=statements)
+        # Load the queue_data and park_info tables
+        queue_data = sql_tables['queue_data']
+
+        # Convert the column to datetime
+        queue_data['date'] = pd.to_datetime(queue_data['date'], format='%Y/%m/%d')
+        
+        # Get the last date in the queue_data table
+        last_date = queue_data['date'].max()
+    except Exception as e:
+        print(f"Error retrieving last date: {e}")
+        return None
     
-    if date_obj < datetime.now():
+    if date_obj <= last_date:
         # If the date is in the past, get past opening hours
         return past_date_opening_hours(park_id, date)
     else:
@@ -69,6 +88,6 @@ def get_opening_hours(park_id, date):
 if __name__ == "__main__":
     # Example usage
     park_id = 2
-    date = '2023/10/30'
+    date = '2025/04/16'
     opening_hours = get_opening_hours(park_id, date)
     print(opening_hours)
