@@ -188,14 +188,3 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
         return model_training(start_date, end_date, longitude, latitude)
     else:
         return model_inference(start_date, end_date, longitude, latitude)
-    
-if __name__ == "__main__":
-    # Example usage
-    start_date = "2025-04-20"
-    end_date = "2025-04-27"
-    park_id = 2
-    latitude, longitude = get_lat_long(park_id)
-    is_model_training = True
-
-    weather_data = get_weather_data(start_date, end_date, latitude, longitude, is_model_training=False)
-    print(weather_data)
