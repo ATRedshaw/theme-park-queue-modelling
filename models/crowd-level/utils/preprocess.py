@@ -163,6 +163,69 @@ def add_opening_hours(df, park_id, dates=None):
 
     return df
 
+def add_weather_data(df, park_id):
+    """
+    Adds weather data to the DataFrame for each date.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing a 'date' column.
+        park_id (str): The ID of the park.
+    
+    Returns:
+        pd.DataFrame: DataFrame with weather data added.
+    """
+    # Get latitude and longitude for the park
+    lat_long = get_lat_long(park_id)
+    if not lat_long:
+        raise ValueError(f"Could not retrieve latitude and longitude for park_id {park_id}")
+    
+    latitude, longitude = lat_long
+    start_date = df['date'].min().strftime('%Y-%m-%d')
+    end_date = df['date'].max().strftime('%Y-%m-%d')
+    
+    weather_data = get_weather_data(start_date, end_date, latitude, longitude)
+    
+    # Add weather data to the DataFrame
+    for index, row in df.iterrows():
+        date_str = row['date'].strftime('%Y-%m-%d')
+        if date_str in weather_data:
+            df.at[index, 'temperature_c'] = weather_data[date_str]['temperature_c']
+            df.at[index, 'precipitation_mm'] = weather_data[date_str]['precipitation_mm']
+            df.at[index, 'wind_speed_kmh'] = weather_data[date_str]['wind_speed_kmh']
+        else:
+            df.at[index, 'temperature_c'] = None
+            df.at[index, 'precipitation_mm'] = None
+            df.at[index, 'wind_speed_kmh'] = None
+
+    return df
+
+def fill_missing_values_with_median(df):
+    """
+    Fill missing values in the DataFrame with the median for numerical columns.
+    Then drop any rows that still have missing values.
+    
+    Args:
+        df (pd.DataFrame): DataFrame with missing values.
+    
+    Returns:
+        pd.DataFrame: DataFrame with missing values filled or dropped.
+    """
+    missing_data_length = len(df[df.isnull().any(axis=1)])
+    print(f"Missing data rows before imputation: {missing_data_length}")
+    # Fill numeric columns with median
+    for column in df.columns:
+        if df[column].isnull().any() and pd.api.types.is_numeric_dtype(df[column]):
+            median_value = df[column].median()
+            df[column] = df[column].fillna(median_value)
+    
+    post_imputation_length = len(df[df.isnull().any(axis=1)])
+    print(f"Missing data rows after imputation: {post_imputation_length}")
+    # Drop rows that still have NaN values after imputation
+    df_clean = df.dropna()
+    print(f"Rows dropped after imputation: {len(df) - len(df_clean)}")
+
+    return df_clean
+
 if __name__ == '__main__':
     park_id = get_train_include_park_id()
     queue_data = generate_training()
@@ -170,5 +233,7 @@ if __name__ == '__main__':
     queue_data = extract_features_from_date(queue_data)
     queue_data = add_bank_holidays(queue_data, park_id)
     queue_data = add_opening_hours(queue_data, park_id)
+    queue_data = add_weather_data(queue_data, park_id)
+    queue_data = fill_missing_values_with_median(queue_data)
 
     print(queue_data.head())
