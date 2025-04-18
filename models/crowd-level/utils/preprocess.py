@@ -1,5 +1,5 @@
-from helpers import load_all_data, get_all_park_id_countries
-from holidays import get_bank_holidays
+from helpers import load_all_data, get_unique_countries_from_park_ids
+from holidays import get_multiple_country_bank_holidays
 from opening import get_opening_hours
 from geo import get_lat_long, get_weather_data
 import yaml
@@ -77,7 +77,7 @@ def extract_features_from_date(df):
 
     return df
 
-def add_bank_holidays(df):
+def add_bank_holidays(df, park_ids):
     """
     Add bank holidays to the DataFrame.
     
@@ -92,18 +92,22 @@ def add_bank_holidays(df):
 
     # Get the unique years from the date column
     years = df['date'].dt.year.unique()
+    countries = get_unique_countries_from_park_ids(park_ids)
     for year in years:
-        bank_holidays = get_bank_holidays(year, country_name='United Kingdom')
-        # Convert bank holidays to datetime
-        bank_holidays = pd.to_datetime(bank_holidays)
+        # Get the unique countries from the park_ids
+        bank_holidays = get_multiple_country_bank_holidays(year, countries)
+
         # Check if the date is a bank holiday
-        df.loc[df['date'].isin(bank_holidays), 'is_bank_holiday'] = True
+        for holiday in bank_holidays:
+            df.loc[df['date'] == holiday, 'is_bank_holiday'] = True
+    
+    return df
 
 if __name__ == '__main__':
     queue_data = generate_training()
     queue_data = queue_data.drop(columns=['crowd_level'])
     queue_data = extract_features_from_date(queue_data)
-    queue_data = add_bank_holidays(queue_data)
-    
+    queue_data = add_bank_holidays(queue_data, get_train_include_park_ids())
+
     # Print where is_bank_holiday is True
     print(queue_data[queue_data['is_bank_holiday'] == True])
