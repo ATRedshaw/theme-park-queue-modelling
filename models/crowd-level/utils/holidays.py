@@ -50,7 +50,5 @@ def get_bank_holidays(year, country_name):
 
 if __name__ == "__main__":
     year = 2023
-    country_names = ["United Kingdom", "United States"]
     print(f'UK Bank Holidays: {get_bank_holidays(year, "United Kingdom")}')
     print(f'US Bank Holidays: {get_bank_holidays(year, "United States")}')
-    print(f'Bank Holidays for multiple countries: {get_multiple_country_bank_holidays(year, country_names)}')
