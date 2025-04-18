@@ -50,6 +50,14 @@ def get_themeparks_id_from_queuetimes_id(name, api_url='https://api.themeparks.w
     return None
 
 def get_unique_countries_from_park_ids(park_ids, url='https://queue-times.com/parks.json'):
+
+    # Try to convert park_ids to integers
+    try:
+        park_ids = [int(park_id) for park_id in park_ids]
+    except ValueError:
+        print("Error: Park IDs must be integers.")
+        return []
+
     response = requests.get(url)
     if response.status_code == 200:
         parks_data = response.json()
