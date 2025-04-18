@@ -40,7 +40,11 @@ def model_pipeline(is_training=True, day_df=None):
         # Merge the target col (crowd_level) back into the main DataFrame on date
         queue_data = queue_data.merge(target_cols[['date', 'crowd_level']], on='date', how='left')
 
+        # Drop date column as it is high cardinality
+        queue_data = queue_data.drop(columns=['date'])
+
         print("Training data prepared successfully.")
+        print('--' * 50)
         return queue_data
 
     def inference_pipeline(day_df):
