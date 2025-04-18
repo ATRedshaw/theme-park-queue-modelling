@@ -49,6 +49,24 @@ def get_themeparks_id_from_queuetimes_id(name, api_url='https://api.themeparks.w
                     return park['id']
     return None
 
+def get_unique_countries_from_park_ids(park_ids, url='https://queue-times.com/parks.json'):
+    response = requests.get(url)
+    if response.status_code == 200:
+        parks_data = response.json()
+        countries = set()
+        for company in parks_data:
+            for park in company.get('parks', []):
+                if park['id'] in park_ids:
+                    countries.add(park['country'])
+                    park_ids.remove(park['id'])  # Remove found ID to track unfound IDs
+        
+        # Print warnings for any IDs not found
+        for park_id in park_ids:
+            print(f"Warning: Park ID {park_id} not found")
+            
+        return list(countries)
+    return []
+
 if __name__ == "__main__":
     data = load_all_data()
     queue_data = data['queue_data']
@@ -64,3 +82,8 @@ if __name__ == "__main__":
     print("\nPark Name for ID 1:")
     park_name = get_name_from_queuetimes_id(1)
     print(park_name if park_name else "Park not found")
+
+    park_ids = [1, 2, 3, 57]
+    countries = get_unique_countries_from_park_ids(park_ids)
+    print("\nUnique Countries:")
+    print(countries)

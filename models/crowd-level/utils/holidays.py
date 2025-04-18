@@ -47,3 +47,28 @@ def get_bank_holidays(year, country_name):
     except Exception as e:
         print(f"Error fetching bank holidays: {e}")
         return []
+    
+def get_multiple_country_bank_holidays(year, country_names):
+    """
+    Get the bank holidays for multiple countries in a given year.
+
+    Args:
+        year (int): The year for which to get the bank holidays.
+        country_names (list): A list of country names.
+
+    Returns:
+        list: A list of unique holiday dates in the format YYYY-MM-DD.
+    """
+    all_holidays = set()
+    for country_name in country_names:
+        holidays = get_bank_holidays(year, country_name)
+        if holidays:
+            all_holidays.update(holidays)
+    return sorted(list(all_holidays))
+
+if __name__ == "__main__":
+    year = 2023
+    country_names = ["United Kingdom", "United States"]
+    print(f'UK Bank Holidays: {get_bank_holidays(year, "United Kingdom")}')
+    print(f'US Bank Holidays: {get_bank_holidays(year, "United States")}')
+    print(f'Bank Holidays for multiple countries: {get_multiple_country_bank_holidays(year, country_names)}')
