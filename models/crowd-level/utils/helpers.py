@@ -49,30 +49,25 @@ def get_themeparks_id_from_queuetimes_id(name, api_url='https://api.themeparks.w
                     return park['id']
     return None
 
-def get_unique_countries_from_park_ids(park_ids, url='https://queue-times.com/parks.json'):
-    # Try to convert park_ids to integers
+def get_country_from_park_id(park_id, url='https://queue-times.com/parks.json'):
+    # Try to convert park_id to integer
     try:
-        park_ids = [int(park_id) for park_id in park_ids]
+        park_id = int(park_id)
     except ValueError:
-        print("Error: Park IDs must be integers.")
-        return []
+        print("Error: Park ID must be an integer.")
+        return None
 
     response = requests.get(url)
     if response.status_code == 200:
         parks_data = response.json()
-        countries = set()
         for company in parks_data:
             for park in company.get('parks', []):
-                if park['id'] in park_ids:
-                    countries.add(park['country'])
-                    park_ids.remove(park['id'])  # Remove found ID to track unfound IDs
+                if park['id'] == park_id:
+                    return park['country']
         
-        # Print warnings for any IDs not found
-        for park_id in park_ids:
-            print(f"Warning: Park ID {park_id} not found")
-            
-        return list(countries)
-    return []
+        # Print warning if ID not found
+        print(f"Warning: Park ID {park_id} not found")
+    return None
 
 if __name__ == "__main__":
     data = load_all_data()
@@ -90,7 +85,6 @@ if __name__ == "__main__":
     park_name = get_name_from_queuetimes_id(1)
     print(park_name if park_name else "Park not found")
 
-    park_ids = [1, 2, 3, 57]
-    countries = get_unique_countries_from_park_ids(park_ids)
-    print("\nUnique Countries:")
-    print(countries)
+    park_id = 2
+    country = get_country_from_park_id(park_id)
+    print(f'Country for Park ID {park_id}: {country}' if country else f'Park ID {park_id} not found')
