@@ -155,6 +155,6 @@ def get_themeparks_schedule(themeparks_id, year, month, day=None):
 
 if __name__ == "__main__":
     park_id = 2
-    date = ['2024-10-30', '2024-10-31', '2025-04-16', '2025-04-25', '2025-04-26', '2025-10-20', '2025-10-30', '2025-10-31']
+    date = ['2024-01-01', '2024-10-30', '2024-10-31', '2025-04-16', '2025-04-25', '2025-04-26', '2025-10-20', '2025-10-30', '2025-10-31']
     opening_hours = get_opening_hours(park_id, date)
     print(opening_hours)
