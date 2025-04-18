@@ -34,7 +34,7 @@ def generate_training():
     # Join the park_id to the queue_data using ride_id
     queue_data['park_id'] = queue_data['ride_id'].map(park_info.set_index('ride_id')['park_id'])
 
-    # Filter the queue data for the specified park_ids
+    # Filter the queue data for the specified park_id
     include_park_id = get_train_include_park_id()
     queue_data = queue_data[queue_data['park_id'] == include_park_id]
 
@@ -57,6 +57,9 @@ def generate_training():
     # Drop the avg_queue_time column
     queue_data = queue_data.drop(columns=['avg_queue_time'])
 
+    # Ensure data is sorted by date
+    queue_data = queue_data.sort_values(by='date').reset_index(drop=True)
+
     return queue_data 
 
 def extract_features_from_date(df):
@@ -69,7 +72,6 @@ def extract_features_from_date(df):
     Returns:
         pd.DataFrame: DataFrame with extracted features.
     """
-    df['date'] = pd.to_datetime(df['date'])
 
     # Add day of week as one-hot encoded columns with True/False (1=Monday, 7=Sunday)
     for i in range(1, 8):
@@ -81,7 +83,7 @@ def extract_features_from_date(df):
 
     return df
 
-def add_bank_holidays(df, park_ids):
+def add_bank_holidays(df, park_id):
     """
     Add bank holidays to the DataFrame.
     
@@ -96,9 +98,9 @@ def add_bank_holidays(df, park_ids):
 
     # Get the unique years from the date column
     years = df['date'].dt.year.unique()
-    country = get_country_from_park_id(park_ids)
+    country = get_country_from_park_id(park_id)
     for year in years:
-        # Get the unique countries from the park_ids
+        # Get the unique countries from the park_id
         bank_holidays = get_bank_holidays(year, country)
 
         # Check if the date is a bank holiday
@@ -107,11 +109,40 @@ def add_bank_holidays(df, park_ids):
     
     return df
 
+def add_opening_hours(df, park_id, dates=None):
+    if dates is None:
+        dates = df['date'].dt.strftime('%Y-%m-%d').tolist()
+    
+    opening_hours = get_opening_hours(park_id, dates)
+    
+    for index, row in df.iterrows():
+        date_str = row['date'].strftime('%Y-%m-%d')
+        if date_str in opening_hours:
+            opening_time = opening_hours[date_str]['opening_time']
+            closing_time = opening_hours[date_str]['closing_time']
+            
+            # Convert opening and closing times to integers (hours)
+            opening_hr = int(opening_time.split(':')[0])
+            closing_hr = int(closing_time.split(':')[0])
+            
+            df.at[index, 'opening_hr'] = opening_hr
+            df.at[index, 'closing_hr'] = closing_hr
+            
+            # Calculate the hours the park is open for
+            df.at[index, 'hours_open_for'] = closing_hr - opening_hr
+        else:
+            df.at[index, 'opening_hr'] = None
+            df.at[index, 'closing_hr'] = None
+            df.at[index, 'hours_open_for'] = None
+
+    return df
+
 if __name__ == '__main__':
+    park_id = get_train_include_park_id()
     queue_data = generate_training()
     queue_data = queue_data.drop(columns=['crowd_level'])
     queue_data = extract_features_from_date(queue_data)
-    queue_data = add_bank_holidays(queue_data, get_train_include_park_id())
+    queue_data = add_bank_holidays(queue_data, park_id)
+    queue_data = add_opening_hours(queue_data, park_id)
 
-    # Print where is_bank_holiday is True
-    print(queue_data[queue_data['is_bank_holiday'] == True])
+    print(queue_data.head())
