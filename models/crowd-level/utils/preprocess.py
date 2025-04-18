@@ -1,4 +1,7 @@
 from helpers import load_all_data
+from holidays import get_bank_holidays
+from opening import get_opening_hours
+from geo import get_lat_long, get_weather_data
 import yaml
 
 def get_train_include_park_ids(config_path='config.yml'):
@@ -12,7 +15,7 @@ def get_train_include_park_ids(config_path='config.yml'):
     return_vals = [str(val) for val in return_vals]
     return return_vals
 
-def preprocess():
+def generate_training():
     statements = {
         'queue_select': '*',
         'queue_where': 'is_closed = 0',
@@ -49,9 +52,9 @@ def preprocess():
     # Drop the avg_queue_time column
     queue_data = queue_data.drop(columns=['avg_queue_time'])
 
-    return queue_data
+    return queue_data   
 
 if __name__ == '__main__':
-    queue_data = preprocess()
+    queue_data = generate_training()
     print(queue_data)
     print(queue_data.describe())
