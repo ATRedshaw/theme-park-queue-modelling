@@ -14,6 +14,9 @@ def get_opening_hours(park_id, date):
     Returns:
         dict: A dictionary containing the opening hours.
     """
+    if '-' in date:
+        date = date.replace('-', '/')
+
     def past_date_opening_hours(park_id, date):
         try:
             park_id = str(park_id)
@@ -134,6 +137,6 @@ def get_themeparks_schedule(themeparks_id, year, month, day=None):
 if __name__ == "__main__":
     # Example usage
     park_id = 2
-    date = '2025/04/16'
+    date = '2025-04-16'
     opening_hours = get_opening_hours(park_id, date)
     print(opening_hours)
