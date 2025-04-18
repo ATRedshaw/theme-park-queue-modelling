@@ -3,6 +3,16 @@ import pandas as pd
 import requests
 
 def load_all_data(db_path='data/queue_Data.db', statements={}):
+    """
+    Load all data from the SQLite database into pandas DataFrames.
+    
+    Args:
+        db_path (str): Path to the SQLite database file.
+        statements (dict): SQL statements for filtering data.
+    
+    Returns:
+        dict: A dictionary containing the queue data and park info DataFrames.
+    """
     conn = sqlite3.connect(db_path)
     
     queue_where = statements.get('queue_where', None)
@@ -32,6 +42,16 @@ def load_all_data(db_path='data/queue_Data.db', statements={}):
     }
 
 def get_name_from_queuetimes_id(park_id, api_url='https://queue-times.com/parks.json'):
+    """
+    Get the name of the park from the park_id using the Queue Times API.
+    
+    Args:
+        park_id (int): The ID of the park.
+        api_url (str): URL of the Queue Times API.
+        
+    Returns:
+        str: The name of the park.
+    """
     # Try to convert park_id to integer
     try:
         park_id = int(park_id)
@@ -50,6 +70,16 @@ def get_name_from_queuetimes_id(park_id, api_url='https://queue-times.com/parks.
     return None
 
 def get_themeparks_id_from_queuetimes_id(name, api_url='https://api.themeparks.wiki/v1/destinations'):
+    """
+    Get the theme park ID from the park name using the Theme Parks API.
+    
+    Args:
+        name (str): The name of the park.
+        api_url (str): URL of the Theme Parks API.
+    
+    Returns:
+        str: The theme park ID.
+    """
     response = requests.get(api_url)
     if response.status_code == 200:
         destinations_data = response.json()
@@ -60,6 +90,14 @@ def get_themeparks_id_from_queuetimes_id(name, api_url='https://api.themeparks.w
     return None
 
 def get_country_from_park_id(park_id, url='https://queue-times.com/parks.json'):
+    """
+    Get the country of the park from the park_id using the Queue Times API.
+    Args:
+        park_id (int): The ID of the park.
+        url (str): URL of the Queue Times API.
+    Returns:
+        str: The country of the park.
+    """ 
     # Try to convert park_id to integer
     try:
         park_id = int(park_id)

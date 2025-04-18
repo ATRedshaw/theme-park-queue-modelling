@@ -6,6 +6,15 @@ import yaml
 import pandas as pd
 
 def get_train_include_park_id(config_path='config.yml'):
+    """
+    Get the park_id to include in the training data from the config file.
+    
+    Args:
+        config_path (str): Path to the configuration file.
+    
+    Returns:
+        str: The park_id to include in the training data.
+    """
     def load_yaml(path='config.yml'):
         with open(path, 'r') as file:
             return yaml.safe_load(file)
@@ -21,6 +30,12 @@ def get_train_include_park_id(config_path='config.yml'):
     return return_val   
 
 def generate_training():
+    """
+    Generate training data for the crowd level model.
+    
+    Returns:
+        pd.DataFrame: DataFrame containing the training data.
+    """
     statements = {
         'queue_select': '*',
         'queue_where': 'is_closed = 0',
@@ -110,6 +125,17 @@ def add_bank_holidays(df, park_id):
     return df
 
 def add_opening_hours(df, park_id, dates=None):
+    """
+    Adds park opening hours to the DataFrame for each date.
+    
+    Args:
+        df (pd.DataFrame): DataFrame containing a 'date' column.
+        park_id (str): The ID of the park.
+        dates (list): List of dates in YYYY-MM-DD format.
+    
+    Returns:
+        pd.DataFrame: DataFrame with opening hours added.
+    """
     if dates is None:
         dates = df['date'].dt.strftime('%Y-%m-%d').tolist()
     
