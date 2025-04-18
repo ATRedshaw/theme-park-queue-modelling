@@ -1,6 +1,6 @@
 import requests
 import pandas as pd
-from helpers import load_all_data, get_name_from_queuetimes_id, get_themeparks_id_from_queuetimes_id
+from .helpers import load_all_data, get_name_from_queuetimes_id, get_themeparks_id_from_queuetimes_id
 from datetime import datetime
 
 def get_opening_hours(park_id, dates):

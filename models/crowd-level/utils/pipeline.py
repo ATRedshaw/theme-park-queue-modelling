@@ -1,4 +1,4 @@
-from preprocess import (
+from .preprocess import (
     get_train_include_park_id,
     generate_training,
     extract_features_from_date,
@@ -26,8 +26,9 @@ def model_pipeline(is_training=True, day_df=None):
         Returns:
             pd.DataFrame: Preprocessed training DataFrame.
         """
+        print('Running model training pipeline...')
         park_id = get_train_include_park_id()
-        queue_data = generate_training()
+        queue_data = generate_training(park_id)
         target_cols = queue_data.copy()
         queue_data = queue_data.drop(columns=['crowd_level'])
         queue_data = extract_features_from_date(queue_data)

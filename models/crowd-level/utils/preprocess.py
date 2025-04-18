@@ -1,7 +1,7 @@
-from helpers import load_all_data, get_country_from_park_id
-from holidays import get_bank_holidays
-from opening import get_opening_hours
-from geo import get_lat_long, get_weather_data
+from .helpers import load_all_data, get_country_from_park_id
+from .holidays import get_bank_holidays
+from .opening import get_opening_hours
+from .geo import get_lat_long, get_weather_data
 import yaml
 import pandas as pd
 
@@ -22,16 +22,21 @@ def get_train_include_park_id(config_path='config.yml'):
     config = load_yaml(config_path)
     return_val = config.get('models', {}).get('crowd-level', {}).get('train', {}).get('include_park_id', [])
     
-    # Convert to string for database querying
-    return_val = str(return_val) if return_val else None
     if return_val is None:
         raise ValueError("No park_id found in config.yml")
     
+    # Convert to string for database querying
+    print(F'Retrieved park_id from config: {return_val}')
+    return_val = str(return_val) if return_val else None
+    
     return return_val   
 
-def generate_training():
+def generate_training(include_park_id):
     """
     Generate training data for the crowd level model.
+
+    Args:
+        include_park_id (str): The ID of the park to include in the training data.
     
     Returns:
         pd.DataFrame: DataFrame containing the training data.
@@ -49,8 +54,6 @@ def generate_training():
     # Join the park_id to the queue_data using ride_id
     queue_data['park_id'] = queue_data['ride_id'].map(park_info.set_index('ride_id')['park_id'])
 
-    # Filter the queue data for the specified park_id
-    include_park_id = get_train_include_park_id()
     queue_data = queue_data[queue_data['park_id'] == include_park_id]
 
     # Drop the 'id' column
@@ -75,6 +78,8 @@ def generate_training():
     # Ensure data is sorted by date
     queue_data = queue_data.sort_values(by='date').reset_index(drop=True)
 
+    print(f'Successfully aggregated and ranked queue data for park_id {include_park_id} with {len(queue_data)} rows.')
+
     return queue_data 
 
 def extract_features_from_date(df):
@@ -95,6 +100,8 @@ def extract_features_from_date(df):
     # Add month as one-hot encoded columns with True/False
     for i in range(1, 13):
         df[f'month_{i}'] = df['date'].dt.month == i
+
+    print(f'Successfully extracted day of week and month features from date column.')
 
     return df
 
@@ -121,6 +128,8 @@ def add_bank_holidays(df, park_id):
         # Check if the date is a bank holiday
         for holiday in bank_holidays:
             df.loc[df['date'] == holiday, 'is_bank_holiday'] = True
+
+    print(f'Successfully added bank holidays to the DataFrame.')
     
     return df
 
@@ -161,6 +170,8 @@ def add_opening_hours(df, park_id, dates=None):
             df.at[index, 'closing_hr'] = None
             df.at[index, 'hours_open_for'] = None
 
+    print(f'Successfully added opening hours to the DataFrame.')
+
     return df
 
 def add_weather_data(df, park_id):
@@ -197,6 +208,8 @@ def add_weather_data(df, park_id):
             df.at[index, 'precipitation_mm'] = None
             df.at[index, 'wind_speed_kmh'] = None
 
+    print(f'Successfully added weather data to the DataFrame.')
+
     return df
 
 def fill_missing_values_with_median(df):
@@ -211,7 +224,6 @@ def fill_missing_values_with_median(df):
         pd.DataFrame: DataFrame with missing values filled or dropped.
     """
     missing_data_length = len(df[df.isnull().any(axis=1)])
-    print(f"Missing data rows before imputation: {missing_data_length}")
     # Fill numeric columns with median
     for column in df.columns:
         if df[column].isnull().any() and pd.api.types.is_numeric_dtype(df[column]):
@@ -219,16 +231,16 @@ def fill_missing_values_with_median(df):
             df[column] = df[column].fillna(median_value)
     
     post_imputation_length = len(df[df.isnull().any(axis=1)])
-    print(f"Missing data rows after imputation: {post_imputation_length}")
     # Drop rows that still have NaN values after imputation
     df_clean = df.dropna()
-    print(f"Rows dropped after imputation: {len(df) - len(df_clean)}")
+
+    print(f'Successfully handled missing values (initially {missing_data_length} rows - {post_imputation_length} null rows after median imputation - {len(df) - len(df_clean)} rows dropped.)')
 
     return df_clean
 
 if __name__ == '__main__':
     park_id = get_train_include_park_id()
-    queue_data = generate_training()
+    queue_data = generate_training(park_id)
     queue_data = queue_data.drop(columns=['crowd_level'])
     queue_data = extract_features_from_date(queue_data)
     queue_data = add_bank_holidays(queue_data, park_id)
