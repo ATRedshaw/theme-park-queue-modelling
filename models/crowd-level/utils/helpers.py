@@ -32,6 +32,14 @@ def load_all_data(db_path='data/queue_Data.db', statements={}):
     }
 
 def get_name_from_queuetimes_id(park_id, api_url='https://queue-times.com/parks.json'):
+    # Try to convert park_id to integer
+    try:
+        park_id = int(park_id)
+    except ValueError:
+        print("Error: Park ID must be an integer.")
+        return None
+    
+    # Fetch park data from the API
     response = requests.get(api_url)
     if response.status_code == 200:
         parks_data = response.json()
