@@ -1,20 +1,24 @@
-from helpers import load_all_data, get_unique_countries_from_park_ids
-from holidays import get_multiple_country_bank_holidays
+from helpers import load_all_data, get_country_from_park_id
+from holidays import get_bank_holidays
 from opening import get_opening_hours
 from geo import get_lat_long, get_weather_data
 import yaml
 import pandas as pd
 
-def get_train_include_park_ids(config_path='config.yml'):
+def get_train_include_park_id(config_path='config.yml'):
     def load_yaml(path='config.yml'):
         with open(path, 'r') as file:
             return yaml.safe_load(file)
         
     config = load_yaml(config_path)
-    return_vals = config.get('models', {}).get('crowd-level', {}).get('train', {}).get('include_park_ids', [])
-    # Convert to strings for database querying
-    return_vals = [str(val) for val in return_vals]
-    return return_vals
+    return_val = config.get('models', {}).get('crowd-level', {}).get('train', {}).get('include_park_id', [])
+    
+    # Convert to string for database querying
+    return_val = str(return_val) if return_val else None
+    if return_val is None:
+        raise ValueError("No park_id found in config.yml")
+    
+    return return_val   
 
 def generate_training():
     statements = {
@@ -31,8 +35,8 @@ def generate_training():
     queue_data['park_id'] = queue_data['ride_id'].map(park_info.set_index('ride_id')['park_id'])
 
     # Filter the queue data for the specified park_ids
-    include_park_ids = get_train_include_park_ids()
-    queue_data = queue_data[queue_data['park_id'].isin(include_park_ids)]
+    include_park_id = get_train_include_park_id()
+    queue_data = queue_data[queue_data['park_id'] == include_park_id]
 
     # Drop the 'id' column
     try:
@@ -92,10 +96,10 @@ def add_bank_holidays(df, park_ids):
 
     # Get the unique years from the date column
     years = df['date'].dt.year.unique()
-    countries = get_unique_countries_from_park_ids(park_ids)
+    country = get_country_from_park_id(park_ids)
     for year in years:
         # Get the unique countries from the park_ids
-        bank_holidays = get_multiple_country_bank_holidays(year, countries)
+        bank_holidays = get_bank_holidays(year, country)
 
         # Check if the date is a bank holiday
         for holiday in bank_holidays:
@@ -107,7 +111,7 @@ if __name__ == '__main__':
     queue_data = generate_training()
     queue_data = queue_data.drop(columns=['crowd_level'])
     queue_data = extract_features_from_date(queue_data)
-    queue_data = add_bank_holidays(queue_data, get_train_include_park_ids())
+    queue_data = add_bank_holidays(queue_data, get_train_include_park_id())
 
     # Print where is_bank_holiday is True
     print(queue_data[queue_data['is_bank_holiday'] == True])
