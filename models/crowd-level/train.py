@@ -18,7 +18,8 @@ def load_and_split_data():
         X_train: Training features.
         X_test: Test features.
         y_train: Training labels.
-        y_test: Test labels."""
+        y_test: Test labels.
+    """
     training_data = model_pipeline(is_training=True)
     X = training_data.drop('crowd_level', axis=1)
     y = training_data['crowd_level']
