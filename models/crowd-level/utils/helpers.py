@@ -24,6 +24,8 @@ def load_all_data(db_path='data/queue_Data.db', statements={}):
     
     conn.close()
 
+    queue_data['date'] = pd.to_datetime(queue_data['date'])
+
     return {
         'queue_data': queue_data,
         'park_info': park_info
