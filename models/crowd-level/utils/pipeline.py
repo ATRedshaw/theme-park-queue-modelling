@@ -66,10 +66,10 @@ def model_pipeline(is_training=True, day_df=None):
         queue_data = extract_features_from_date(queue_data)
         queue_data = add_bank_holidays(queue_data, park_id)
         queue_data = add_opening_hours(queue_data, park_id)
-        queue_data = add_weather_data(queue_data, park_id)
+        queue_data = add_weather_data(queue_data, park_id, is_training=False)
         # I think this needs to be changed for date handling - 
         # Maybe if a date doesnt exist use some average values for the month from the previous year or something.
-        # queue_data = fill_missing_values_with_median(queue_data)
+        queue_data = fill_missing_values_with_median(queue_data)
 
         # Drop date column as it is high cardinality
         queue_data = queue_data.drop(columns=['date'])
