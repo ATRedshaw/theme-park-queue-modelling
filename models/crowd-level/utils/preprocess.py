@@ -174,7 +174,7 @@ def add_opening_hours(df, park_id, dates=None):
 
     return df
 
-def add_weather_data(df, park_id):
+def add_weather_data(df, park_id, is_training=True):
     """
     Adds weather data to the DataFrame for each date.
     
@@ -194,7 +194,7 @@ def add_weather_data(df, park_id):
     start_date = df['date'].min().strftime('%Y-%m-%d')
     end_date = df['date'].max().strftime('%Y-%m-%d')
     
-    weather_data = get_weather_data(start_date, end_date, latitude, longitude)
+    weather_data = get_weather_data(start_date, end_date, latitude, longitude, is_model_training=is_training)
     
     # Add weather data to the DataFrame
     for index, row in df.iterrows():
