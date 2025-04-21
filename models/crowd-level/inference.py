@@ -2,7 +2,7 @@ from utils.pipeline import model_pipeline
 import pandas as pd
 import yaml
 import os
-import pickle
+import joblib
 
 def load_model(config_path='config.yml'):
     # Load the configuration file
@@ -20,13 +20,27 @@ def load_model(config_path='config.yml'):
     
     # Load and return the model
     with open(model_path, 'rb') as file:
-        model = pickle.load(file)
+        model = joblib.load(file)
     
     return model
 
 if __name__ == "__main__":
-    dates_list = ['2025-05-01']
+    # Fix invalid future date returning empty
+    # Generate a list of dates in the format YYYY-MM-DD from 2025-04-18 to 2025-05-05
+    dates_list = pd.date_range(start='2025-04-18', end='2025-05-05').strftime('%Y-%m-%d').tolist()
     dates_df = pd.DataFrame({'date': pd.to_datetime(dates_list)})
     inference_data = model_pipeline(is_training=False, day_df=dates_df)
-    print(inference_data)
     model = load_model()
+    print(inference_data)
+
+    # Make predictions on the inference data
+    predictions = model.predict(inference_data)
+
+    # Create a DataFrame to display the results
+    results_df = pd.DataFrame({
+        'date': dates_df['date'],
+        'crowd_level_prediction': predictions
+    })
+
+    print("Predicted Crowd Levels:")
+    print(results_df)
