@@ -29,9 +29,9 @@ if __name__ == "__main__":
     # Generate a list of dates in the format YYYY-MM-DD from 2025-04-18 to 2025-05-05
     dates_list = pd.date_range(start='2025-04-18', end='2025-05-05').strftime('%Y-%m-%d').tolist()
     dates_df = pd.DataFrame({'date': pd.to_datetime(dates_list)})
-    inference_data = model_pipeline(is_training=False, day_df=dates_df)
+    dates_df = model_pipeline(is_training=False, day_df=dates_df)
+    inference_data = dates_df.drop(columns=['date'])
     model = load_model()
-    print(inference_data)
 
     # Make predictions on the inference data
     predictions = model.predict(inference_data)
