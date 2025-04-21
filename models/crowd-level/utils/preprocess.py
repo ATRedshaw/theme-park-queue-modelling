@@ -179,6 +179,9 @@ def add_opening_hours(df, park_id, dates=None):
 
     print(f'Successfully added opening hours to the DataFrame.')
 
+    # Drop any rows where opening hours are not available
+    df = df.dropna(subset=['opening_hr', 'closing_hr', 'hours_open_for'])
+
     return df
 
 def add_weather_data(df, park_id, is_training=True):
