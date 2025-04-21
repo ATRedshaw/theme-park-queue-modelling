@@ -156,15 +156,22 @@ def add_opening_hours(df, park_id, dates=None):
             opening_time = opening_hours[date_str]['opening_time']
             closing_time = opening_hours[date_str]['closing_time']
             
-            # Convert opening and closing times to integers (hours)
-            opening_hr = int(opening_time.split(':')[0])
-            closing_hr = int(closing_time.split(':')[0])
+            # Convert opening and closing times to integers (hours), else default to None
+            try:
+                opening_hr = int(opening_time.split(':')[0])
+                closing_hr = int(closing_time.split(':')[0])
+            except:
+                opening_hr = None
+                closing_hr = None
             
             df.at[index, 'opening_hr'] = opening_hr
             df.at[index, 'closing_hr'] = closing_hr
             
             # Calculate the hours the park is open for
-            df.at[index, 'hours_open_for'] = closing_hr - opening_hr
+            try:
+                df.at[index, 'hours_open_for'] = closing_hr - opening_hr
+            except:
+                df.at[index, 'hours_open_for'] = None
         else:
             df.at[index, 'opening_hr'] = None
             df.at[index, 'closing_hr'] = None
