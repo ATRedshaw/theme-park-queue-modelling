@@ -71,9 +71,6 @@ def model_pipeline(is_training=True, day_df=None):
         # Maybe if a date doesnt exist use some average values for the month from the previous year or something.
         queue_data = fill_missing_values_with_median(queue_data)
 
-        # Drop date column as it is high cardinality
-        queue_data = queue_data.drop(columns=['date'])
-
         print("Inference data pipeline completed successfully.")
         print('--' * 50)
         return queue_data
