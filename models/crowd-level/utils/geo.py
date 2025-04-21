@@ -117,11 +117,6 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
         try:
             start_date = datetime.strptime(start_date, "%Y-%m-%d")
             end_date = datetime.strptime(end_date, "%Y-%m-%d")
-
-            if start_date > end_date:
-                raise ValueError("Start date must be before end date.")
-            if start_date < datetime.now():
-                raise ValueError("Start date must be in the future for inference.")
             
             # Open-Meteo API endpoint
             url = "https://api.open-meteo.com/v1/forecast"
