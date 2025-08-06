@@ -103,9 +103,9 @@ def store_park_info(conn, ride_id, park_id, ride_name, logger):
         conn.rollback()
         raise
 
-def get_existing_dates(conn, park_id, logger):
+def get_last_scraped_date(conn, park_id, logger):
     """
-    Retrieves a list of unique dates that already have queue data for the given park_id.
+    Retrieves the last scraped date for a given park_id.
     
     Args:
         conn: SQLite connection object
@@ -113,20 +113,26 @@ def get_existing_dates(conn, park_id, logger):
         logger: Logger instance for logging actions
     
     Returns:
-        list: List of dates in 'YYYY/MM/DD' format that already have data
+        str: The last scraped date in 'YYYY/MM/DD' format, or None if no data exists
     """
-    logger.debug(f"Retrieving existing dates for park {park_id}")
+    logger.debug(f"Retrieving the last scraped date for park {park_id}")
     cursor = conn.cursor()
     try:
         cursor.execute("""
-            SELECT DISTINCT qd.date
+            SELECT MAX(qd.date)
             FROM queue_data qd
             JOIN park_info pi ON qd.ride_id = pi.ride_id
             WHERE pi.park_id = ?
         """, (park_id,))
-        existing_dates = [row[0] for row in cursor.fetchall()]
-        logger.debug(f"Found {len(existing_dates)} existing dates for park {park_id}")
-        return existing_dates
+        last_date = cursor.fetchone()[0]
+        if last_date:
+            logger.debug(f"Last scraped date for park {park_id} is {last_date}")
+        else:
+            logger.debug(f"No existing data found for park {park_id}")
+
+        last_date = last_date.replace('-', '/')
+        
+        return last_date
     except Exception as e:
-        logger.error(f"Failed to retrieve existing dates for park {park_id}: {e}")
-        return []
+        logger.error(f"Failed to retrieve the last scraped date for park {park_id}: {e}")
+        return None

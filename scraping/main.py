@@ -4,10 +4,11 @@ import os
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 from config import load_credentials
 from logger import setup_logging
-from database import setup_database, store_data, store_park_info, get_existing_dates
+from database import setup_database, store_data, store_park_info, get_last_scraped_date
 from scraper import login, extract_data
 from utils import filter_data_to_intervals, generate_date_range
 import random
+from datetime import datetime, timedelta
 
 async def main():
     """
@@ -56,12 +57,6 @@ async def main():
         logger.critical(e)
         return
     
-    try:
-        all_dates = generate_date_range(start_date, end_date, exclude_months, logger)
-    except ValueError as e:
-        logger.critical(f"Failed to generate date range: {e}")
-        conn.close()
-        return
     
     async with async_playwright() as p:
         logger.debug("Launching browser")
@@ -84,11 +79,23 @@ async def main():
             return
         
         for park_id in park_ids:
-            # Get existing dates for this park
-            existing_dates = get_existing_dates(conn, park_id, logger)
-            # Filter valid_dates to exclude existing dates
-            valid_dates = [date for date in all_dates if date not in existing_dates]
-            logger.info(f"Processing {len(valid_dates)} new dates for park {park_id}")
+            last_scraped_date_str = get_last_scraped_date(conn, park_id, logger)
+            
+            current_start_date = start_date
+            if last_scraped_date_str:
+                last_date = datetime.strptime(last_scraped_date_str, '%Y/%m/%d')
+                next_day = last_date + timedelta(days=1)
+                config_start_date_obj = datetime.strptime(start_date, '%Y/%m/%d')
+                if next_day > config_start_date_obj:
+                    current_start_date = next_day.strftime('%Y/%m/%d')
+
+            try:
+                valid_dates = generate_date_range(current_start_date, end_date, exclude_months, logger)
+            except ValueError as e:
+                logger.critical(f"Failed to generate date range for park {park_id}: {e}")
+                continue
+
+            logger.info(f"Processing {len(valid_dates)} new dates for park {park_id}, starting from {current_start_date}")
             
             for date in valid_dates:
                 url = f'https://queue-times.com/parks/{park_id}/calendar/{date}'
@@ -96,7 +103,7 @@ async def main():
                 try:
                     logger.debug(f"Navigating to {url}")
                     await page.goto(url)
-                    delay = random.uniform(1, 2)
+                    delay = random.uniform(0.5, 1.5)
                     logger.debug(f"Waiting {delay:.2f}s after page load")
                     await asyncio.sleep(delay)
                     
