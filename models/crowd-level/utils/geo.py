@@ -2,6 +2,20 @@ from datetime import datetime
 from meteostat import Point, Daily
 import pandas as pd
 import requests
+# ----- Fix SSL Error -----
+import ssl
+import certifi
+import os
+
+# Set environment variables
+os.environ['SSL_CERT_FILE'] = certifi.where()
+os.environ['REQUESTS_CA_BUNDLE'] = certifi.where()
+os.environ['CURL_CA_BUNDLE'] = certifi.where()
+# ------------------------
+
+# Create and set default SSL context
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+ssl._create_default_https_context = lambda: ssl_context
 
 def get_lat_long(park_id, api_url='https://queue-times.com/parks.json'):
     """Use the park_id to get the longitude and latitude of the park from the park_locations.jsomn file.
@@ -75,9 +89,11 @@ def get_weather_data(start_date, end_date, latitude, longitude, is_model_trainin
             if end_date > datetime.now():
                 raise ValueError("End date must be before the current date.")
             
+            print(f"Fetching weather data for {latitude}, {longitude} between {start_date} and {end_date}")
             location = Point(latitude, longitude)
             data = Daily(location, start_date, end_date)
             data = data.fetch()
+            print(f"Data fetched for {latitude}, {longitude} between {start_date} and {end_date}")
 
             # Process data into dictionary
             weather_data = {}
