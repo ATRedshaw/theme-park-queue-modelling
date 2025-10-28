@@ -26,8 +26,12 @@ def load_model(config_path='config.yml'):
 
 if __name__ == "__main__":
     # Fix invalid future date returning empty
-    # Generate a list of dates in the format YYYY-MM-DD from 2025-04-18 to 2025-05-05
-    dates_list = pd.date_range(start='2025-08-07', end='2025-08-21').strftime('%Y-%m-%d').tolist()
+    # Generate a list of dates in the format YYYY-MM-DD for todays date to 14 days in the future
+    todays_date = pd.to_datetime('today').strftime('%Y-%m-%d')
+    future_date = pd.to_datetime('today') + pd.Timedelta(days=14)
+    future_date = future_date.strftime('%Y-%m-%d')
+
+    dates_list = pd.date_range(start=todays_date, end=future_date).strftime('%Y-%m-%d').tolist()
     dates_df = pd.DataFrame({'date': pd.to_datetime(dates_list)})
     dates_df = model_pipeline(is_training=False, day_df=dates_df)
     inference_data = dates_df.drop(columns=['date'])
