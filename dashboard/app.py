@@ -1,3 +1,4 @@
+# streamlit run dashboard/app.py
 import streamlit as st
 import pandas as pd
 import sqlite3
@@ -127,8 +128,10 @@ st.header(f'Queue Time Analysis for {park_id}')
 if filtered_data.empty:
     st.warning("No data available for the selected filters.")
 else:
-    # Exclude closed rides for average calculation
-    open_queue_data = filtered_data[~filtered_data['is_closed']].copy()
+    # Exclude closed rides and zero queue times for average calculation
+    open_queue_data = filtered_data[
+        (~filtered_data['is_closed']) & (filtered_data['queue_time'] > 0)
+    ].copy()
 
     # Calculate average queue time
     average_queue_time = open_queue_data.groupby(['ride_id', 'time_of_day'])['queue_time'].mean().reset_index()
