@@ -50,8 +50,10 @@ if __name__ == "__main__":
         _config = yaml.safe_load(f)
     park_id = _config.get('models', {}).get('crowd-level', {}).get('inference', {}).get('park_id', 2)
 
+    horizon_days = _config.get('models', {}).get('crowd-level', {}).get('inference', {}).get('horizon_days', 14)
+
     todays_date = pd.to_datetime('today').strftime('%Y-%m-%d')
-    future_date = (pd.to_datetime('today') + pd.Timedelta(days=14)).strftime('%Y-%m-%d')
+    future_date = (pd.to_datetime('today') + pd.Timedelta(days=horizon_days)).strftime('%Y-%m-%d')
     dates_list = pd.date_range(start=todays_date, end=future_date).strftime('%Y-%m-%d').tolist()
 
     dates_df = pd.DataFrame({
@@ -84,7 +86,3 @@ if __name__ == "__main__":
 
     print('Predicted Crowd Levels:')
     print(results_df)
-
-    # Save a version to csv with the full inference data and predictions
-    full_results_df = pd.concat([meta_df, inference_data, pd.Series(predictions, name='crowd_level_prediction')], axis=1)
-    full_results_df.to_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'inference_results.csv'), index=False)

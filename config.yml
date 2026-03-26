@@ -12,4 +12,5 @@ models:
     inference:
       model_name: "crowd-level-model"
       park_id: 2
+      horizon_days: 365 
       dates: []
