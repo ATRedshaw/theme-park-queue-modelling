@@ -1,8 +1,10 @@
+import pandas as pd
 from .preprocess import (
-    get_train_include_park_id,
+    get_train_include_park_ids,
     generate_training,
     extract_features_from_date,
     add_bank_holidays,
+    add_school_holidays,
     add_opening_hours,
     add_weather_data,
     fill_missing_values_with_median
@@ -22,56 +24,74 @@ def model_pipeline(is_training=True, day_df=None):
     def training_pipeline():
         """
         Prepare the training data by loading, preprocessing, and merging with additional features.
-        
+
         Returns:
             pd.DataFrame: Preprocessed training DataFrame.
         """
         print('Running model training pipeline...')
-        park_id = get_train_include_park_id()
-        queue_data = generate_training(park_id)
-        target_cols = queue_data.copy()
+        park_ids = get_train_include_park_ids()
+        queue_data = generate_training(park_ids)
+        target_cols = queue_data[['date', 'park_id', 'crowd_level']].copy()
+
         queue_data = queue_data.drop(columns=['crowd_level'])
         queue_data = extract_features_from_date(queue_data)
-        queue_data = add_bank_holidays(queue_data, park_id)
-        queue_data = add_opening_hours(queue_data, park_id)
-        queue_data = add_weather_data(queue_data, park_id)
+        queue_data = add_bank_holidays(queue_data)
+        queue_data = add_school_holidays(queue_data)
+        queue_data = add_opening_hours(queue_data)
+        queue_data = add_weather_data(queue_data)
         queue_data = fill_missing_values_with_median(queue_data)
 
-        # Merge the target col (crowd_level) back into the main DataFrame on date
-        queue_data = queue_data.merge(target_cols[['date', 'crowd_level']], on='date', how='left')
+        # Merge crowd_level while date and park_id are still raw columns.
+        # One-hot encoding happens after so park_id is available for the join.
+        queue_data = queue_data.merge(
+            target_cols[['date', 'park_id', 'crowd_level']],
+            on=['date', 'park_id'],
+            how='left'
+        )
 
-        # Drop date column as it is high cardinality
+        # One-hot encode park_id so the model learns park-specific baselines
+        # without treating park_id as a continuous ordinal variable.
+        queue_data = pd.get_dummies(queue_data, columns=['park_id'], prefix='park', dtype=int)
+
         queue_data = queue_data.drop(columns=['date'])
 
-        print("Training data prepared successfully.")
+        print('Training data prepared successfully.')
         print('--' * 50)
         return queue_data
 
     def inference_pipeline(day_df):
         """
         Prepare the inference data by preprocessing and merging with additional features.
-        
+
         Args:
-            day_df (pd.DataFrame): DataFrame containing the data for inference.
-        
+            day_df (pd.DataFrame): DataFrame with 'date' and 'park_id' columns.
+
         Returns:
-            pd.DataFrame: Preprocessed inference DataFrame.
+            pd.DataFrame: Preprocessed inference DataFrame (date column retained for display).
         """
         if day_df is None:
-            raise ValueError("day_df cannot be None for inference - days must be provided.")
-    
+            raise ValueError('day_df cannot be None for inference — dates must be provided.')
+        if 'park_id' not in day_df.columns:
+            raise ValueError("day_df must contain a 'park_id' column for inference.")
+
         print('Running model inference pipeline...')
-        park_id = get_train_include_park_id()
         queue_data = day_df.copy()
+
+        # Ensure park_id is a string to match training dtype.
+        queue_data['park_id'] = queue_data['park_id'].astype(str)
+
         queue_data = extract_features_from_date(queue_data)
-        queue_data = add_bank_holidays(queue_data, park_id)
-        queue_data = add_opening_hours(queue_data, park_id)
-        queue_data = add_weather_data(queue_data, park_id, is_training=False)
-        # I think this needs to be changed for date handling - 
-        # Maybe if a date doesnt exist use some average values for the month from the previous year or something.
+        queue_data = add_bank_holidays(queue_data)
+        queue_data = add_school_holidays(queue_data)
+        queue_data = add_opening_hours(queue_data)
+        queue_data = add_weather_data(queue_data, is_training=False)
         queue_data = fill_missing_values_with_median(queue_data)
 
-        print("Inference data pipeline completed successfully.")
+        # One-hot encode park_id. Column alignment against training columns
+        # is handled in inference.py using the saved feature column list.
+        queue_data = pd.get_dummies(queue_data, columns=['park_id'], prefix='park', dtype=int)
+
+        print('Inference data pipeline completed successfully.')
         print('--' * 50)
         return queue_data
 
