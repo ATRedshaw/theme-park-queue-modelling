@@ -139,14 +139,35 @@ streamlit run dashboard/app.py
 
 ## Tech Stack
 
+**Data collection**
+
 | Component | Library / Tool |
 |---|---|
-| Scraping | [Playwright](https://playwright.dev/python/) |
+| Browser automation | [Playwright](https://playwright.dev/python/) |
+| Queue time data | [Queue Times](https://queue-times.com/) (scraped) |
+| Park coordinates | `queue-times.com/parks.json` (public JSON endpoint) |
 | Data storage | SQLite via `sqlite3` |
+
+**Feature engineering**
+
+| Component | Library / Tool |
+|---|---|
+| Bank holidays | [Nager.Date API](https://date.nager.at/) |
+| School holidays | [Google Gemini](https://ai.google.dev/) (`google-genai`, LLM-generated) |
+| Opening hours — historical | Local SQLite database |
+| Opening hours — future | [ThemeParks.wiki API](https://api.themeparks.wiki/) |
+| Weather — training | [Meteostat](https://dev.meteostat.net/) (historical observations) |
+| Weather — inference (≤16 days) | [Open-Meteo](https://open-meteo.com/) forecast API |
+| Weather — inference (>16 days) | Meteostat 5-year monthly averages (fallback) |
+| Country resolution | `pycountry` |
+
+**Modelling & dashboard**
+
+| Component | Library / Tool |
+|---|---|
 | Data manipulation | pandas, NumPy |
 | ML model | scikit-learn (Random Forest) |
 | Hyperparameter tuning | scikit-optimize (Bayesian search) |
-| Weather data | [Meteostat](https://dev.meteostat.net/) |
 | Dashboard | [Streamlit](https://streamlit.io/) + Plotly |
 | Config | PyYAML |
 | Credentials | python-dotenv |
