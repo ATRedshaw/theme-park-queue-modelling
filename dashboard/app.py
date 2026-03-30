@@ -1,3 +1,4 @@
+# streamlit run dashboard/app.py
 """Streamlit dashboard for exploring theme park crowd level predictions."""
 
 import os
