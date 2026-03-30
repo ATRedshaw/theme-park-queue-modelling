@@ -1,7 +1,7 @@
 from utils.pipeline import model_pipeline
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, TimeSeriesSplit
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from skopt import BayesSearchCV
@@ -28,13 +28,16 @@ def load_and_split_data():
 def optimize_random_forest(X_train, y_train):
     """
     Perform Bayesian optimisation to find best Random Forest parameters.
-    
+
+    Uses TimeSeriesSplit for cross-validation to avoid temporal leakage —
+    shuffled k-fold would allow the model to see future dates during validation.
+
     Args:
         X_train: Training features.
         y_train: Training labels.
-    
+
     Returns:
-        model: The optimized Random Forest model.
+        model: The optimised Random Forest model.
     """
     rf_search_space = {
         'n_estimators': Integer(50, 300),
@@ -44,19 +47,19 @@ def optimize_random_forest(X_train, y_train):
         'max_features': ['sqrt', 'log2']
     }
 
-    print("Tuning Random Forest...")
+    print('Tuning Random Forest...')
     rf_bayes = BayesSearchCV(
         RandomForestRegressor(random_state=42),
         rf_search_space,
         n_iter=20,
-        cv=5,
+        cv=TimeSeriesSplit(n_splits=5),
         n_jobs=-1,
         scoring='neg_mean_squared_error',
         random_state=104
     )
     rf_bayes.fit(X_train, y_train)
-    print(f"Best Random Forest parameters: {rf_bayes.best_params_}")
-    
+    print(f'Best Random Forest parameters: {rf_bayes.best_params_}')
+
     return rf_bayes.best_estimator_
 
 def evaluate_model(model, X_test, y_test):
@@ -102,39 +105,41 @@ def display_feature_importance(model, X):
     print("\nFeature importance:")
     print(feature_importance.head(10))
 
-def save_model(model, config_path='config.yml'):
+def save_model(model, feature_columns=None, config_path='config.yml'):
     """
-    Save the trained model to a file in the models folder.
-    
+    Save the trained model to the model-exports folder.
+
+    Also saves feature column names as a separate file so the inference pipeline
+    can align its one-hot encoded columns to what the model expects.
+
     Args:
         model: The trained model to save.
+        feature_columns (list[str] | None): Ordered list of feature column names.
         config_path (str): Path to the configuration file.
     """
-    # Get the model name from the config file
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
-    model_name = config.get('models', {}).get('crowd-level', {}).get('train', {}).get('model_name', 'random_forest_model')
+    model_name = config.get('models', {}).get('crowd-level', {}).get('train', {}).get('model_name', 'crowd-level-model')
 
-    # Get the directory this file is in
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    
-    # Create models directory if it doesn't exist
     models_dir = os.path.join(current_dir, 'model-exports')
     os.makedirs(models_dir, exist_ok=True)
-    
+
     model_path = os.path.join(models_dir, f'{model_name}.pkl')
-    # Check if the model already exists
     if os.path.exists(model_path):
-        print(f"Model {model_name}.pkl already exists. Overwriting...")
+        print(f'Model {model_name}.pkl already exists. Overwriting...')
     else:
-        print(f"Saving model as {model_name}.pkl in model-exports folder...")
-    
-    # Save the model
+        print(f'Saving model as {model_name}.pkl in model-exports folder...')
     joblib.dump(model, model_path)
+
+    if feature_columns is not None:
+        columns_path = os.path.join(models_dir, f'{model_name}_columns.pkl')
+        joblib.dump(list(feature_columns), columns_path)
+        print(f'Saved feature columns ({len(feature_columns)} features) to {model_name}_columns.pkl')
 
 if __name__ == "__main__":
     X_train, X_test, y_train, y_test = load_and_split_data()
     rf_model = optimize_random_forest(X_train, y_train)
     rf_pred = evaluate_model(rf_model, X_test, y_test)
     display_feature_importance(rf_model, X_train)
-    save_model(rf_model)
+    save_model(rf_model, feature_columns=X_train.columns.tolist())

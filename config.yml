@@ -1,14 +1,16 @@
 scraper:
   start_date: "2021/04/01"
-  end_date: "2025/08/15"
+  end_date: "2025/10/31"
   exclude_months: [12, 1, 2]
   park_ids: [1,2,3]
 
 models:
   crowd-level:
     train:
-      model_name: "Thorpe-Park-Crowd-Level"
-      include_park_id: 2
+      model_name: "crowd-level-model"
+      include_park_ids: null
     inference:
-      model_name: "Thorpe-Park-Crowd-Level"
+      model_name: "crowd-level-model"
+      park_id: 2
+      horizon_days: 365 
       dates: []
